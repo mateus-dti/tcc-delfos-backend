@@ -1,6 +1,6 @@
-# Backend - Delfos API
+# Backend - Delfos API (Node.js)
 
-API REST desenvolvida em .NET 8 para gerenciamento de coleções, fontes de dados, schemas e execução de consultas federadas via Trino.
+API REST desenvolvida em Node.js/TypeScript para gerenciamento de coleções, fontes de dados, schemas e execução de consultas federadas via Trino.
 
 ## 📚 Documentação
 
@@ -23,10 +23,28 @@ git push -u origin main
 
 ## 📁 Estrutura
 
-- **Delfos.Api**: Camada de apresentação (Controllers, Middleware, Configurações)
-- **Delfos.Application**: Lógica de aplicação (Commands, Queries, Services, DTOs)
-- **Delfos.Domain**: Entidades de domínio, interfaces e value objects
-- **Delfos.Infrastructure**: Implementações (Data Access, Repositories, Serviços externos)
+O projeto segue **Clean Architecture** com separação em camadas:
+
+```
+src/
+├── api/                    # Camada de apresentação (Controllers, Routes, Middleware)
+│   ├── controllers/
+│   ├── routes/
+│   └── middleware/
+├── application/            # Lógica de aplicação (Commands, Queries, DTOs)
+│   ├── commands/
+│   ├── queries/
+│   └── dto/
+├── domain/                 # Entidades de domínio, interfaces e enums
+│   ├── entities/
+│   ├── interfaces/
+│   └── enums/
+└── infrastructure/         # Implementações (Data Access, Repositories, Serviços externos)
+    ├── data/
+    ├── repositories/
+    ├── services/
+    └── config/
+```
 
 ## 🎯 Funcionalidades Principais
 
@@ -41,33 +59,34 @@ git push -u origin main
 
 ## 🛠️ Tecnologias
 
-- **.NET 8.0** - Framework principal
-- **ASP.NET Core** - Web API framework
-- **Entity Framework Core 8.0** - ORM
+- **Node.js** - Runtime JavaScript
+- **TypeScript** - Linguagem de programação
+- **Express.js** - Web framework
+- **TypeORM** - ORM
 - **PostgreSQL** - Banco de metadados
-- **Serilog** - Logging estruturado
-- **Swagger/OpenAPI** - Documentação de API
-- **MediatR** - CQRS pattern
-- **FluentValidation** - Validação
-- **AutoMapper** - Mapeamento DTO ↔ Entity
-- **BCrypt** - Hash de senhas
-- **JWT Bearer** - Autenticação
+- **Winston** - Logging estruturado
+- **Swagger/OpenAPI** - Documentação de API (futuro)
+- **CQRS Pattern** - Separação de comandos e queries
+- **class-validator** - Validação
+- **bcrypt** - Hash de senhas
+- **jsonwebtoken** - Autenticação JWT
+- **crypto** - Criptografia AES-GCM
 
 ## 🏗️ Arquitetura
 
 O projeto segue **Clean Architecture** com separação em camadas:
 
-- **Presentation Layer** (Delfos.Api): Controllers, Middleware, Configurações
-- **Application Layer** (Delfos.Application): Use Cases, Commands, Queries, Services
-- **Domain Layer** (Delfos.Domain): Entidades, Interfaces, Value Objects
-- **Infrastructure Layer** (Delfos.Infrastructure): EF Core, Repositories, External Services
+- **Presentation Layer** (api): Controllers, Routes, Middleware
+- **Application Layer** (application): Use Cases, Commands, Queries, DTOs
+- **Domain Layer** (domain): Entidades, Interfaces, Enums
+- **Infrastructure Layer** (infrastructure): TypeORM, Repositories, External Services
 
 ## 📋 Plano de Implementação
 
 O desenvolvimento será realizado **por funcionalidades**, seguindo a ordem:
 
-1. **Fase 0**: Infraestrutura Base
-2. **RF08**: Segurança e Permissões
+1. **Fase 0**: Infraestrutura Base ✅
+2. **RF08**: Segurança e Permissões ✅
 3. **RF01**: Gerenciar Coleções
 4. **RF02**: Conexão e Extração de Schema
 5. **RF03**: Descoberta de Relacionamentos
@@ -81,30 +100,74 @@ Consulte [DEFINICOES.md](./DEFINICOES.md) para detalhes completos.
 
 ## 🔧 Pré-requisitos
 
-- .NET 8.0 SDK
+- Node.js 18+ e npm
 - Docker e Docker Compose
 - PostgreSQL (via Docker)
-- Trino (via Docker)
 
 ## 🚀 Como Executar
 
 ```bash
-# Subir serviços Docker (PostgreSQL, MongoDB, Trino)
-docker-compose up -d
+# Instalar dependências
+npm install
 
 # Configurar variáveis de ambiente
 cp .env.example .env
 # Editar .env com suas configurações
 
-# Restaurar dependências
-dotnet restore
+# Subir serviços Docker (PostgreSQL)
+docker-compose up -d
 
-# Executar migrations
-dotnet ef database update --project src/Delfos.Infrastructure --startup-project src/Delfos.Api
+# Executar migrations (TypeORM criará as tabelas automaticamente em desenvolvimento)
+npm run migration:run
 
-# Executar API
-dotnet run --project src/Delfos.Api
+# Executar em modo desenvolvimento
+npm run dev
+
+# Executar em modo produção
+npm run build
+npm start
 ```
 
-A API estará disponível em `http://localhost:5000` (ou porta configurada) e o Swagger em `http://localhost:5000/swagger`.
+A API estará disponível em `http://localhost:5000` (ou porta configurada).
 
+## 📝 Endpoints Disponíveis
+
+### Autenticação
+- `POST /api/auth/login` - Login de usuário
+- `GET /api/auth/me` - Obter usuário atual (requer autenticação)
+- `POST /api/auth/logout` - Logout (requer autenticação)
+
+### Usuários
+- `GET /api/users` - Listar usuários (requer autenticação)
+- `GET /api/users/:id` - Obter usuário por ID (requer autenticação)
+- `POST /api/users` - Criar usuário (público)
+- `PUT /api/users/:id` - Atualizar usuário (requer autenticação)
+- `DELETE /api/users/:id` - Desativar usuário (requer autenticação)
+
+### Health Check
+- `GET /health` - Verificar status da API
+
+## 🔐 Autenticação
+
+A API utiliza JWT (JSON Web Tokens) para autenticação. Após fazer login, inclua o token no header:
+
+```
+Authorization: Bearer <token>
+```
+
+## 📦 Scripts Disponíveis
+
+- `npm run dev` - Executa em modo desenvolvimento com hot-reload
+- `npm run build` - Compila TypeScript para JavaScript
+- `npm start` - Executa a aplicação em modo produção
+- `npm run migration:generate` - Gera uma nova migration
+- `npm run migration:run` - Executa migrations pendentes
+- `npm run migration:revert` - Reverte a última migration
+
+## 🧪 Testes
+
+(Em desenvolvimento)
+
+## 📄 Licença
+
+ISC

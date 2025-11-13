@@ -1,0 +1,16 @@
+# Ignorar backups
+backups/*
+!backups/.gitkeep
+
+# Ignorar arquivos temporários
+*.tmp
+*.log
+
+# Manter estrutura de pastas
+!.gitkeep
+!README.md
+!migrations/README.md
+!scripts/README.md
+!seeds/README.md
+
+

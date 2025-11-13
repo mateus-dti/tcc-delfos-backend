@@ -1,0 +1,49 @@
+{
+  "name": "delfos-backend",
+  "version": "1.0.0",
+  "description": "Backend API REST em Node.js para gerenciamento de coleções, fontes de dados e execução de consultas federadas via Trino",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/infrastructure/data/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/infrastructure/data/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/infrastructure/data/data-source.ts"
+  },
+  "keywords": [
+    "api",
+    "rest",
+    "nodejs",
+    "typescript",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "typeorm": "^0.3.17",
+    "pg": "^8.11.3",
+    "reflect-metadata": "^0.1.13",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "class-validator": "^0.14.0",
+    "class-transformer": "^0.5.1",
+    "winston": "^3.11.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-async-errors": "^3.1.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.6",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/cors": "^2.8.17",
+    "typescript": "^5.3.3",
+    "ts-node-dev": "^2.0.0",
+    "ts-node": "^10.9.2"
+  }
+}
+
