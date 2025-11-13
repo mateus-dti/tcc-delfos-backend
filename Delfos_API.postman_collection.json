@@ -1,0 +1,696 @@
+{
+	"info": {
+		"_postman_id": "delfos-backend-api",
+		"name": "Delfos Backend API",
+		"description": "Coleção completa da API REST do Delfos Backend\n\n## Autenticação\n\nA maioria dos endpoints requer autenticação JWT. Faça login primeiro e copie o token retornado para a variável `token` da coleção.\n\n## Variáveis da Coleção\n\n- `baseUrl`: URL base da API (padrão: http://localhost:5000)\n- `token`: Token JWT obtido no login\n- `userId`: ID do usuário (preenchido automaticamente)\n- `collectionId`: ID da coleção (preenchido automaticamente)\n- `dataSourceId`: ID da fonte de dados (preenchido automaticamente)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Verifica se a API está funcionando"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Autenticação",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"token\", jsonData.token);",
+									"    pm.collectionVariables.set(\"userId\", jsonData.user.id);",
+									"    console.log(\"Token salvo:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"mateus\",\n  \"password\": \"12345\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Faz login e retorna token JWT"
+					},
+					"response": []
+				},
+				{
+					"name": "Obter Usuário Atual",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"me"
+							]
+						},
+						"description": "Retorna informações do usuário autenticado"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout do usuário (stateless - apenas remove token do cliente)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Usuários",
+			"item": [
+				{
+					"name": "Criar Usuário",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"userId\", jsonData.id);",
+									"    console.log(\"Usuário criado com ID:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"novousuario\",\n  \"email\": \"novo@example.com\",\n  \"password\": \"senha123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Cria um novo usuário (endpoint público - não requer autenticação)"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Usuários",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Lista todos os usuários (requer autenticação)"
+					},
+					"response": []
+				},
+				{
+					"name": "Obter Usuário por ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "Obtém um usuário específico por ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar Usuário",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"novoemail@example.com\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "Atualiza informações de um usuário"
+					},
+					"response": []
+				},
+				{
+					"name": "Excluir Usuário",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "Exclui um usuário (soft delete - marca como inativo)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Coleções",
+			"item": [
+				{
+					"name": "Criar Coleção",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"collectionId\", jsonData.id);",
+									"    console.log(\"Coleção criada com ID:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Minha Coleção\",\n  \"description\": \"Descrição da minha coleção\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/collections",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections"
+							]
+						},
+						"description": "Cria uma nova coleção (requer autenticação)"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Coleções",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/collections?page=1&pageSize=10&orderBy=createdAt&orderDirection=DESC",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Número da página (padrão: 1)"
+								},
+								{
+									"key": "pageSize",
+									"value": "10",
+									"description": "Itens por página (padrão: 10)"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Busca por nome ou descrição",
+									"disabled": true
+								},
+								{
+									"key": "orderBy",
+									"value": "createdAt",
+									"description": "Ordenar por: name ou createdAt"
+								},
+								{
+									"key": "orderDirection",
+									"value": "DESC",
+									"description": "Direção: ASC ou DESC"
+								}
+							]
+						},
+						"description": "Lista todas as coleções do usuário autenticado com paginação, filtros e busca. Retorna: items[], total, page, pageSize, totalPages. Cada item inclui dataSourcesCount."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Coleções",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/collections?search=produção&page=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "produção",
+									"description": "Busca por nome ou descrição (case-insensitive)"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Busca coleções por nome ou descrição"
+					},
+					"response": []
+				},
+				{
+					"name": "Obter Coleção por ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/collections/{{collectionId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"{{collectionId}}"
+							]
+						},
+						"description": "Obtém uma coleção específica por ID (sem fontes de dados)"
+					},
+					"response": []
+				},
+				{
+					"name": "Obter Detalhes Completos da Coleção",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/collections/{{collectionId}}?details=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"{{collectionId}}"
+							],
+							"query": [
+								{
+									"key": "details",
+									"value": "true",
+									"description": "Inclui todas as fontes de dados associadas"
+								}
+							]
+						},
+						"description": "Obtém uma coleção com todas as informações completas, incluindo lista de fontes de dados associadas"
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar Coleção",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Coleção Atualizada\",\n  \"description\": \"Nova descrição\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/collections/{{collectionId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"{{collectionId}}"
+							]
+						},
+						"description": "Atualiza uma coleção (apenas o dono pode atualizar)"
+					},
+					"response": []
+				},
+				{
+					"name": "Excluir Coleção",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/collections/{{collectionId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"{{collectionId}}"
+							]
+						},
+						"description": "Exclui uma coleção (soft delete - apenas o dono pode excluir)"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Fontes de Dados da Coleção",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/collections/{{collectionId}}/datasources",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"{{collectionId}}",
+								"datasources"
+							]
+						},
+						"description": "Lista todas as fontes de dados associadas a uma coleção"
+					},
+					"response": []
+				},
+				{
+					"name": "Associar Fonte de Dados à Coleção",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"dataSourceId\", jsonData.id);",
+									"    console.log(\"Fonte de dados associada com ID:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"PostgreSQL Production\",\n  \"type\": \"PostgreSQL\",\n  \"connectionUriEncrypted\": \"postgresql://user:password@localhost:5432/dbname\",\n  \"metadata\": {\n    \"host\": \"localhost\",\n    \"port\": 5432,\n    \"database\": \"dbname\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/collections/{{collectionId}}/datasources",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"{{collectionId}}",
+								"datasources"
+							]
+						},
+						"description": "Associa uma nova fonte de dados a uma coleção. Tipos válidos: PostgreSQL, MongoDB"
+					},
+					"response": []
+				},
+				{
+					"name": "Desassociar Fonte de Dados da Coleção",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/collections/{{collectionId}}/datasources/{{dataSourceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"{{collectionId}}",
+								"datasources",
+								"{{dataSourceId}}"
+							]
+						},
+						"description": "Desassocia uma fonte de dados de uma coleção (soft delete - apenas o dono da coleção pode desassociar)"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "collectionId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "dataSourceId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

@@ -1,0 +1,104 @@
+### Arquivo de Testes HTTP para Delfos Backend
+### Use com extensão REST Client do VS Code ou similar
+
+@baseUrl = http://localhost:5000
+@token = 
+
+### ============================================
+### 1. HEALTH CHECK
+### ============================================
+GET {{baseUrl}}/health
+
+### ============================================
+### 2. AUTENTICAÇÃO
+### ============================================
+
+### Criar usuário (registro público)
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "senha123"
+}
+
+### Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "senha123"
+}
+
+### Obter usuário atual (requer auth)
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### Logout
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{token}}
+
+### ============================================
+### 3. USUÁRIOS
+### ============================================
+
+### Listar usuários (requer auth)
+GET {{baseUrl}}/api/users
+Authorization: Bearer {{token}}
+
+### Obter usuário por ID (requer auth)
+GET {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{token}}
+
+### Atualizar usuário (requer auth)
+PUT {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "novoemail@example.com",
+  "isActive": true
+}
+
+### Excluir usuário (requer auth - soft delete)
+DELETE {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### 4. COLEÇÕES
+### ============================================
+
+### Listar coleções do usuário (requer auth)
+GET {{baseUrl}}/api/collections
+Authorization: Bearer {{token}}
+
+### Obter coleção por ID (requer auth)
+GET {{baseUrl}}/api/collections/{{collectionId}}
+Authorization: Bearer {{token}}
+
+### Criar coleção (requer auth)
+POST {{baseUrl}}/api/collections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Minha Coleção",
+  "description": "Descrição da minha coleção"
+}
+
+### Atualizar coleção (requer auth - apenas dono)
+PUT {{baseUrl}}/api/collections/{{collectionId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Coleção Atualizada",
+  "description": "Nova descrição"
+}
+
+### Excluir coleção (requer auth - apenas dono, soft delete)
+DELETE {{baseUrl}}/api/collections/{{collectionId}}
+Authorization: Bearer {{token}}
+
