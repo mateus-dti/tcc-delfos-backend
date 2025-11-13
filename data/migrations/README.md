@@ -1,59 +1,50 @@
-# Migrations do Entity Framework Core
+# Migrations - Delfos Backend
 
-Esta pasta contém as migrations geradas pelo Entity Framework Core.
-
-## ⚠️ Importante
-
-**NÃO edite migrations manualmente** após serem criadas e aplicadas em produção.
+Este diretório contém os scripts SQL de migração do banco de dados.
 
 ## Estrutura
 
-As migrations são geradas automaticamente pelo EF Core e seguem o padrão:
-```
-YYYYMMDDHHMMSS_NomeDaMigration.cs
-```
+- `001_create_tables.sql` - Script inicial de criação de todas as tabelas (Users, Collections, CollectionAccesses)
+- `002_add_user_role.sql` - Adiciona campo role na tabela Users
+- `003_create_datasources_table.sql` - Cria tabela DataSources para fontes de dados
+- `003_create_datasources_table_execute.sql` - Versão executável da migration 003 (com verificações)
 
-## Comandos Úteis
+## Como executar
 
-### Criar Migration
+### Opção 1: Via psql (linha de comando)
+
 ```bash
-dotnet ef migrations add NomeDaMigration \
-  --project src/Delfos.Infrastructure \
-  --startup-project src/Delfos.Api \
-  --output-dir data/migrations
+# Executar migrations em ordem
+psql -h localhost -U delfos -d delfos_metadata -f data/migrations/001_create_tables.sql
+psql -h localhost -U delfos -d delfos_metadata -f data/migrations/002_add_user_role.sql
+psql -h localhost -U delfos -d delfos_metadata -f data/migrations/003_create_datasources_table.sql
 ```
 
-### Aplicar Migrations
+### Opção 2: Via Docker
+
 ```bash
-dotnet ef database update \
-  --project src/Delfos.Infrastructure \
-  --startup-project src/Delfos.Api
+# Executar migrations em ordem
+docker exec -i delfos-postgres psql -U delfos -d delfos_metadata < data/migrations/001_create_tables.sql
+docker exec -i delfos-postgres psql -U delfos -d delfos_metadata < data/migrations/002_add_user_role.sql
+docker exec -i delfos-postgres psql -U delfos -d delfos_metadata < data/migrations/003_create_datasources_table.sql
 ```
 
-### Reverter Migration
-```bash
-dotnet ef database update NomeDaMigrationAnterior \
-  --project src/Delfos.Infrastructure \
-  --startup-project src/Delfos.Api
-```
+### Opção 3: Via TypeORM (recomendado para desenvolvimento)
 
-### Remover Última Migration (antes de aplicar)
-```bash
-dotnet ef migrations remove \
-  --project src/Delfos.Infrastructure \
-  --startup-project src/Delfos.Api
-```
+O TypeORM está configurado com `synchronize: true` em desenvolvimento, então as tabelas são criadas automaticamente. Para produção, use migrations.
 
-### Gerar Script SQL
-```bash
-dotnet ef migrations script \
-  --project src/Delfos.Infrastructure \
-  --startup-project src/Delfos.Api \
-  --output data/scripts/migration_script.sql
-```
+## Tabelas Criadas
 
-## Configuração
+1. **Users** - Usuários do sistema
+2. **Collections** - Coleções de fontes de dados
+3. **CollectionAccesses** - Permissões de acesso às coleções
+4. **DataSources** - Fontes de dados associadas às coleções (PostgreSQL, MongoDB)
 
-O diretório de migrations pode ser configurado no `DelfosDbContext` ou via parâmetro `--output-dir` nos comandos acima.
+## Observações
 
+- Todas as tabelas usam UUID como chave primária
+- Soft delete implementado via campo `isActive`
+- Triggers automáticos para atualização de `updatedAt`
+- Índices criados para otimização de consultas
+- Foreign keys com ações apropriadas (CASCADE/RESTRICT)
 

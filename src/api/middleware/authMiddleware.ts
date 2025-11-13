@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
+import { UserRole } from '../../domain/enums/UserRole';
+import { UnauthorizedException } from '../../domain/exceptions/UnauthorizedException';
 
 export interface AuthRequest extends Request {
   user?: {
     sub: string;
     name: string;
     email: string;
+    role: UserRole;
   };
 }
 
@@ -14,7 +17,10 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ message: 'Unauthorized - No token provided' });
+      const exception = new UnauthorizedException(
+        'Token de autenticação não fornecido. Por favor, faça login novamente.'
+      );
+      res.status(exception.statusCode).json(exception.toJSON());
       return;
     }
 
@@ -22,7 +28,12 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     const secret = process.env.JWT_SECRET;
 
     if (!secret) {
-      res.status(500).json({ message: 'JWT configuration error' });
+      res.status(500).json({
+        error: {
+          code: 'CONFIGURATION_ERROR',
+          message: 'Erro de configuração do servidor. Entre em contato com o administrador.',
+        },
+      });
       return;
     }
 
@@ -35,11 +46,21 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
       sub: decoded.sub,
       name: decoded.name,
       email: decoded.email,
+      role: decoded.role || 'default',
     };
 
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'Unauthorized - Invalid token' });
+  } catch (error: any) {
+    let message = 'Token de autenticação inválido ou expirado. Por favor, faça login novamente.';
+    
+    if (error.name === 'TokenExpiredError') {
+      message = 'Seu token de autenticação expirou. Por favor, faça login novamente.';
+    } else if (error.name === 'JsonWebTokenError') {
+      message = 'Token de autenticação inválido. Por favor, faça login novamente.';
+    }
+
+    const exception = new UnauthorizedException(message);
+    res.status(exception.statusCode).json(exception.toJSON());
   }
 }
 

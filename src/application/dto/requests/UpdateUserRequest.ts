@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsEmail, IsBoolean, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsEmail, IsBoolean, MaxLength, IsEnum } from 'class-validator';
+import { UserRole } from '../../../domain/enums/UserRole';
 
 export class UpdateUserRequest {
   @IsOptional()
@@ -9,6 +10,10 @@ export class UpdateUserRequest {
   @IsOptional()
   @IsString()
   password?: string;
+
+  @IsOptional()
+  @IsEnum(UserRole, { message: 'Role must be one of: default, manager, admin' })
+  role?: UserRole;
 
   @IsOptional()
   @IsBoolean()

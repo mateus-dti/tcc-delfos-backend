@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { User } from './User';
+import { Collection } from './Collection';
 import { AccessPermission } from '../enums/AccessPermission';
 
 @Entity('CollectionAccesses')
@@ -35,5 +36,9 @@ export class CollectionAccess {
   @ManyToOne(() => User, (user) => user.collectionAccesses)
   @JoinColumn({ name: 'userId' })
   user!: User;
+
+  @ManyToOne(() => Collection, (collection) => collection.accesses)
+  @JoinColumn({ name: 'collectionId' })
+  collection!: Collection;
 }
 

@@ -6,6 +6,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { CollectionAccess } from './CollectionAccess';
+import { UserRole } from '../enums/UserRole';
 
 @Entity('Users')
 export class User {
@@ -20,6 +21,13 @@ export class User {
 
   @Column({ length: 500 })
   passwordHash!: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.Default,
+  })
+  role!: UserRole;
 
   @Column({ default: true })
   isActive!: boolean;

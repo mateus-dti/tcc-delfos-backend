@@ -18,6 +18,7 @@ export class GetCurrentUserQueryHandler implements IGetCurrentUserQueryHandler {
       id: user.id,
       username: user.username,
       email: user.email,
+      role: user.role,
       isActive: user.isActive,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt,

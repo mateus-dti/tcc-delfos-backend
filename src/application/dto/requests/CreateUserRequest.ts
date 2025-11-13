@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString, IsEmail, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsString, IsEmail, MaxLength, IsOptional, IsEnum } from 'class-validator';
+import { UserRole } from '../../../domain/enums/UserRole';
 
 export class CreateUserRequest {
   @IsNotEmpty({ message: 'Username is required' })
@@ -14,5 +15,9 @@ export class CreateUserRequest {
   @IsNotEmpty({ message: 'Password is required' })
   @IsString()
   password!: string;
+
+  @IsOptional()
+  @IsEnum(UserRole, { message: 'Role must be one of: default, manager, admin' })
+  role?: UserRole;
 }
 
