@@ -30,3 +30,4 @@ docker exec -i delfos-metadata-db psql -U delfos -d delfos_metadata < seeds/01_I
 
 
 
+

@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "delfos-backend-api",
 		"name": "Delfos Backend API",
-		"description": "Coleção completa da API REST do Delfos Backend\n\n## Autenticação\n\nA maioria dos endpoints requer autenticação JWT. Faça login primeiro e copie o token retornado para a variável `token` da coleção.\n\n## Variáveis da Coleção\n\n- `baseUrl`: URL base da API (padrão: http://localhost:5000)\n- `token`: Token JWT obtido no login\n- `userId`: ID do usuário (preenchido automaticamente)\n- `collectionId`: ID da coleção (preenchido automaticamente)\n- `dataSourceId`: ID da fonte de dados (preenchido automaticamente)",
+		"description": "Coleção completa da API REST do Delfos Backend\n\n## Autenticação\n\nA maioria dos endpoints requer autenticação JWT. Faça login primeiro e copie o token retornado para a variável `token` da coleção.\n\n## Variáveis da Coleção\n\n- `baseUrl`: URL base da API (padrão: http://localhost:5000)\n- `token`: Token JWT obtido no login\n- `userId`: ID do usuário (preenchido automaticamente)\n- `collectionId`: ID da coleção (preenchido automaticamente)\n- `dataSourceId`: ID da fonte de dados (preenchido automaticamente)\n- `oldSnapshotId`: ID do snapshot antigo (para comparação)\n- `newSnapshotId`: ID do snapshot novo (para comparação)\n- `scheduleId`: ID do agendamento (preenchido automaticamente)\n\n## Funcionalidades Implementadas\n\n### RF02.3 - Agendar Reextração de Schema\n- Reextração manual de schema\n- Histórico de snapshots\n- Comparação de snapshots\n- Agendamento periódico (cron)\n\n### RF03.1 - Identificar Chaves Primárias e Estrangeiras\n- Detecção automática de chaves primárias (PostgreSQL e MongoDB)\n- Detecção automática de chaves estrangeiras (PostgreSQL)\n- Suporte para chaves compostas\n\n### RF03.2 - Aplicar Heurísticas para Sugerir Relacionamentos\n- Descoberta automática de relacionamentos entre fontes distintas\n- Heurísticas: nome similar (fuzzy matching), tipo compatível, amostras de dados\n- Score de confiança (0-1) para cada sugestão\n- Threshold mínimo: 30% de confiança",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -641,6 +641,479 @@
 						"description": "Desassocia uma fonte de dados de uma coleção (soft delete - apenas o dono da coleção pode desassociar)"
 					},
 					"response": []
+				},
+				{
+					"name": "Descobrir Relacionamentos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    console.log(\"Relacionamentos descobertos:\", jsonData.length);",
+									"    jsonData.forEach((rel, index) => {",
+									"        console.log(`${index + 1}. ${rel.sourceTable}.${rel.sourceColumn} -> ${rel.targetTable}.${rel.targetColumn} (confiança: ${(rel.confidence * 100).toFixed(0)}%)`);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/collections/{{collectionId}}/discover-relationships",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"{{collectionId}}",
+								"discover-relationships"
+							]
+						},
+						"description": "RF03.2 - Descobre relacionamentos entre fontes de dados de uma coleção usando heurísticas:\n- Nome similar (fuzzy matching)\n- Tipo compatível\n- Amostras de dados sobrepostas\n- Padrões comuns de nome (ex: *_id)\n\nRetorna lista de relacionamentos sugeridos com score de confiança (0-1). Relacionamentos existentes são substituídos."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Fontes de Dados",
+			"item": [
+				{
+					"name": "Criar Fonte de Dados",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"dataSourceId\", jsonData.id);",
+									"    console.log(\"Fonte de dados criada com ID:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"PostgreSQL Production\",\n  \"collectionId\": \"{{collectionId}}\",\n  \"type\": \"PostgreSQL\",\n  \"connectionUri\": \"postgresql://user:password@localhost:5432/database\",\n  \"metadata\": {\n    \"host\": \"localhost\",\n    \"port\": 5432,\n    \"database\": \"database\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources"
+							]
+						},
+						"description": "Cria uma nova fonte de dados. Tipos válidos: PostgreSQL, MongoDB. A URI será criptografada automaticamente. A extração de schema será executada automaticamente após o cadastro."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Fontes de Dados",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources?collectionId={{collectionId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources"
+							],
+							"query": [
+								{
+									"key": "collectionId",
+									"value": "{{collectionId}}",
+									"description": "ID da coleção (opcional - se não fornecido, retorna todas as fontes do usuário)",
+									"disabled": false
+								}
+							]
+						},
+						"description": "Lista todas as fontes de dados. Se collectionId for fornecido, filtra por coleção específica."
+					},
+					"response": []
+				},
+				{
+					"name": "Obter Fonte de Dados por ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}"
+							]
+						},
+						"description": "Obtém uma fonte de dados específica por ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Extrair Schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    console.log(\"Schema extraído com sucesso. Versão:\", jsonData.version);",
+									"    console.log(\"Tabelas encontradas:\", jsonData.tables.length);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}/extract-schema",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}",
+								"extract-schema"
+							]
+						},
+						"description": "Extrai schema e metadados de uma fonte de dados. Para PostgreSQL: extrai tabelas, colunas, tipos, chaves primárias/estrangeiras (RF03.1), índices e amostras de dados. Para MongoDB: extrai coleções, campos, tipos, chave primária _id (RF03.1) e amostras de documentos. Atualiza lastScannedAt automaticamente."
+					},
+					"response": []
+				},
+				{
+					"name": "Obter Schema",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}/schema?version=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}",
+								"schema"
+							],
+							"query": [
+								{
+									"key": "version",
+									"value": "1",
+									"description": "Versão do schema (opcional - se não fornecido, retorna o mais recente)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Obtém o schema extraído de uma fonte de dados. Retorna estrutura hierárquica: tabelas/coleções → colunas/campos com tipos, nullable, chaves primárias/estrangeiras (RF03.1), índices e amostras. Inclui metadados editáveis (descrições e sinônimos)."
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar Metadados do Schema",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"metadata\": {\n    \"tables\": {\n      \"users\": {\n        \"description\": \"Tabela de usuários do sistema\",\n        \"columns\": {\n          \"username\": {\n            \"description\": \"Nome de usuário único\",\n            \"synonyms\": [\"login\", \"user_name\"]\n          },\n          \"email\": {\n            \"description\": \"Email do usuário\",\n            \"synonyms\": [\"e-mail\", \"email_address\"]\n          }\n        }\n      },\n      \"orders\": {\n        \"description\": \"Pedidos realizados pelos usuários\",\n        \"columns\": {\n          \"total\": {\n            \"description\": \"Valor total do pedido\",\n            \"synonyms\": [\"amount\", \"value\"]\n          }\n        }\n      }\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}/schema/metadata",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}",
+								"schema",
+								"metadata"
+							]
+						},
+						"description": "Atualiza metadados editáveis do schema (descrições e sinônimos de tabelas e colunas). Os metadados são usados no contexto para geração de SQL. Faz merge com metadados existentes."
+					},
+					"response": []
+				},
+				{
+					"name": "Reextrair Schema (Rescan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    console.log(\"Schema reextraído com sucesso. Versão:\", jsonData.version);",
+									"    console.log(\"Snapshot ID:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}/rescan",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}",
+								"rescan"
+							]
+						},
+						"description": "RF02.3 - Executa reextração manual de schema. Alias do endpoint extract-schema. Cria um novo snapshot mantendo o histórico anterior."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Snapshots",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}/snapshots",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}",
+								"snapshots"
+							]
+						},
+						"description": "RF02.3 - Lista todos os snapshots históricos de uma fonte de dados, ordenados do mais recente para o mais antigo. Cada snapshot inclui versão, data de geração e estrutura completa do schema."
+					},
+					"response": []
+				},
+				{
+					"name": "Comparar Snapshots",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}/snapshots/compare?oldSnapshotId={{oldSnapshotId}}&newSnapshotId={{newSnapshotId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}",
+								"snapshots",
+								"compare"
+							],
+							"query": [
+								{
+									"key": "oldSnapshotId",
+									"value": "{{oldSnapshotId}}",
+									"description": "ID do snapshot antigo"
+								},
+								{
+									"key": "newSnapshotId",
+									"value": "{{newSnapshotId}}",
+									"description": "ID do snapshot novo"
+								}
+							]
+						},
+						"description": "RF02.3 - Compara dois snapshots e retorna diferenças: tabelas/colunas adicionadas, removidas ou modificadas. Útil para identificar mudanças no schema ao longo do tempo."
+					},
+					"response": []
+				},
+				{
+					"name": "Criar Agendamento de Reextração",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"scheduleId\", jsonData.id);",
+									"    console.log(\"Agendamento criado com ID:\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cronExpression\": \"0 2 * * *\",\n  \"enabled\": true,\n  \"description\": \"Reextração diária às 2h da manhã\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}/rescan/schedule",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}",
+								"rescan",
+								"schedule"
+							]
+						},
+						"description": "RF02.3 - Cria um agendamento periódico para reextração de schema. Use expressões cron: '0 2 * * *' (diário às 2h), '0 0 * * 0' (semanal domingo), etc. Formato: minuto hora dia mês dia-da-semana."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Agendamentos de Reextração",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}/rescan/schedule",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}",
+								"rescan",
+								"schedule"
+							]
+						},
+						"description": "RF02.3 - Lista todos os agendamentos de reextração configurados para uma fonte de dados."
+					},
+					"response": []
+				},
+				{
+					"name": "Remover Agendamento de Reextração",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/datasources/{{dataSourceId}}/rescan/schedule/{{scheduleId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"datasources",
+								"{{dataSourceId}}",
+								"rescan",
+								"schedule",
+								"{{scheduleId}}"
+							]
+						},
+						"description": "RF02.3 - Remove um agendamento de reextração específico."
+					},
+					"response": []
 				}
 			]
 		}
@@ -688,6 +1161,21 @@
 		},
 		{
 			"key": "dataSourceId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "oldSnapshotId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "newSnapshotId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "scheduleId",
 			"value": "",
 			"type": "string"
 		}

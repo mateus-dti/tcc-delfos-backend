@@ -20,6 +20,13 @@ import { GetCollectionDetailsQuery } from '../../application/queries/collections
 import { GetCollectionDetailsQueryHandler } from '../../application/queries/collections/GetCollectionDetailsQueryHandler';
 import { GetCollectionDataSourcesQuery } from '../../application/queries/collections/GetCollectionDataSourcesQuery';
 import { GetCollectionDataSourcesQueryHandler } from '../../application/queries/collections/GetCollectionDataSourcesQueryHandler';
+import { DiscoverRelationshipsCommand, IDiscoverRelationshipsCommandHandler } from '../../application/commands/collections/DiscoverRelationshipsCommand';
+import { GetCollectionRelationshipsQuery, IGetCollectionRelationshipsQueryHandler } from '../../application/queries/collections/GetCollectionRelationshipsQuery';
+import { CreateRelationshipCommand, ICreateRelationshipCommandHandler } from '../../application/commands/collections/CreateRelationshipCommand';
+import { UpdateRelationshipCommand, IUpdateRelationshipCommandHandler } from '../../application/commands/collections/UpdateRelationshipCommand';
+import { DeleteRelationshipCommand, IDeleteRelationshipCommandHandler } from '../../application/commands/collections/DeleteRelationshipCommand';
+import { CreateRelationshipRequest } from '../../application/dto/requests/CreateRelationshipRequest';
+import { UpdateRelationshipRequest } from '../../application/dto/requests/UpdateRelationshipRequest';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { AuthRequest } from '../middleware/authMiddleware';
@@ -37,7 +44,12 @@ export class CollectionsController {
     private deleteCollectionHandler: DeleteCollectionCommandHandler,
     private associateDataSourceHandler: AssociateDataSourceToCollectionCommandHandler,
     private disassociateDataSourceHandler: DisassociateDataSourceFromCollectionCommandHandler,
-    private getCollectionDataSourcesHandler: GetCollectionDataSourcesQueryHandler
+    private getCollectionDataSourcesHandler: GetCollectionDataSourcesQueryHandler,
+    private discoverRelationshipsHandler: IDiscoverRelationshipsCommandHandler,
+    private getCollectionRelationshipsHandler: IGetCollectionRelationshipsQueryHandler,
+    private createRelationshipHandler: ICreateRelationshipCommandHandler,
+    private updateRelationshipHandler: IUpdateRelationshipCommandHandler,
+    private deleteRelationshipHandler: IDeleteRelationshipCommandHandler
   ) {}
 
   async getAllCollections(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -283,6 +295,159 @@ export class CollectionsController {
       };
 
       await this.disassociateDataSourceHandler.handle(command);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async discoverRelationships(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const authReq = req as AuthRequest;
+      const ownerId = authReq.user?.sub;
+
+      if (!ownerId) {
+        throw new UnauthorizedException('Você precisa estar autenticado para descobrir relacionamentos.');
+      }
+
+      const command: DiscoverRelationshipsCommand = {
+        collectionId: id,
+        ownerId: ownerId,
+      };
+
+      const result = await this.discoverRelationshipsHandler.handle(command);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // RF03.3 - Gerenciar relacionamentos
+  async getCollectionRelationships(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const authReq = req as AuthRequest;
+      const ownerId = authReq.user?.sub;
+
+      if (!ownerId) {
+        throw new UnauthorizedException('Você precisa estar autenticado para visualizar relacionamentos.');
+      }
+
+      const query: GetCollectionRelationshipsQuery = {
+        collectionId: id,
+        ownerId: ownerId,
+      };
+
+      const result = await this.getCollectionRelationshipsHandler.handle(query);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createRelationship(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const authReq = req as AuthRequest;
+      const ownerId = authReq.user?.sub;
+
+      if (!ownerId) {
+        throw new UnauthorizedException('Você precisa estar autenticado para criar relacionamentos.');
+      }
+
+      const createRequest = plainToInstance(CreateRelationshipRequest, req.body);
+      const errors = await validate(createRequest);
+
+      if (errors.length > 0) {
+        const validationErrors = errors.map((e) => ({
+          property: e.property,
+          constraints: e.constraints,
+        }));
+        throw new ValidationException(
+          'Os dados fornecidos são inválidos. Por favor, verifique os campos e tente novamente.',
+          validationErrors
+        );
+      }
+
+      const command: CreateRelationshipCommand = {
+        collectionId: id,
+        sourceTable: createRequest.sourceTable,
+        sourceColumn: createRequest.sourceColumn,
+        targetTable: createRequest.targetTable,
+        targetColumn: createRequest.targetColumn,
+        sourceDataSourceId: createRequest.sourceDataSourceId,
+        targetDataSourceId: createRequest.targetDataSourceId,
+        ownerId: ownerId,
+      };
+
+      const result = await this.createRelationshipHandler.handle(command);
+      res.status(201).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateRelationship(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id, relationshipId } = req.params;
+      const authReq = req as AuthRequest;
+      const ownerId = authReq.user?.sub;
+
+      if (!ownerId) {
+        throw new UnauthorizedException('Você precisa estar autenticado para atualizar relacionamentos.');
+      }
+
+      const updateRequest = plainToInstance(UpdateRelationshipRequest, req.body);
+      const errors = await validate(updateRequest, { skipMissingProperties: true });
+
+      if (errors.length > 0) {
+        const validationErrors = errors.map((e) => ({
+          property: e.property,
+          constraints: e.constraints,
+        }));
+        throw new ValidationException(
+          'Os dados fornecidos são inválidos. Por favor, verifique os campos e tente novamente.',
+          validationErrors
+        );
+      }
+
+      const command: UpdateRelationshipCommand = {
+        relationshipId: relationshipId,
+        collectionId: id,
+        sourceTable: updateRequest.sourceTable,
+        sourceColumn: updateRequest.sourceColumn,
+        targetTable: updateRequest.targetTable,
+        targetColumn: updateRequest.targetColumn,
+        confidence: updateRequest.confidence,
+        manualOverride: updateRequest.manualOverride,
+        ownerId: ownerId,
+      };
+
+      const result = await this.updateRelationshipHandler.handle(command);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteRelationship(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id, relationshipId } = req.params;
+      const authReq = req as AuthRequest;
+      const ownerId = authReq.user?.sub;
+
+      if (!ownerId) {
+        throw new UnauthorizedException('Você precisa estar autenticado para excluir relacionamentos.');
+      }
+
+      const command: DeleteRelationshipCommand = {
+        relationshipId: relationshipId,
+        collectionId: id,
+        ownerId: ownerId,
+      };
+
+      await this.deleteRelationshipHandler.handle(command);
       res.status(204).send();
     } catch (error) {
       next(error);

@@ -22,6 +22,25 @@ export function createCollectionRoutes(collectionsController: CollectionsControl
     collectionsController.disassociateDataSource(req, res, next)
   );
 
+  // RF03.2 - Descoberta de relacionamentos
+  router.post('/:id/discover-relationships', authMiddleware, (req, res, next) => 
+    collectionsController.discoverRelationships(req, res, next)
+  );
+
+  // RF03.3 - Gerenciar relacionamentos
+  router.get('/:id/relationships', authMiddleware, (req, res, next) => 
+    collectionsController.getCollectionRelationships(req, res, next)
+  );
+  router.post('/:id/relationships', authMiddleware, (req, res, next) => 
+    collectionsController.createRelationship(req, res, next)
+  );
+  router.put('/:id/relationships/:relationshipId', authMiddleware, (req, res, next) => 
+    collectionsController.updateRelationship(req, res, next)
+  );
+  router.delete('/:id/relationships/:relationshipId', authMiddleware, (req, res, next) => 
+    collectionsController.deleteRelationship(req, res, next)
+  );
+
   return router;
 }
 

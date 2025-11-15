@@ -53,5 +53,7 @@ export class DataSource {
   @ManyToOne(() => Collection, (collection) => collection.dataSources, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'collectionId' })
   collection!: Collection;
+
+  schemaSnapshots?: import('./SchemaSnapshot').SchemaSnapshot[];
 }
 

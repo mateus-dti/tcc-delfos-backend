@@ -11,14 +11,16 @@ import { errorHandlerMiddleware } from './api/middleware/errorHandlerMiddleware'
 import { createAuthRoutes } from './api/routes/authRoutes';
 import { createUserRoutes } from './api/routes/userRoutes';
 import { createCollectionRoutes } from './api/routes/collectionRoutes';
+import { createDataSourceRoutes } from './api/routes/dataSourceRoutes';
 import { AuthController } from './api/controllers/AuthController';
 import { UsersController } from './api/controllers/UsersController';
 import { CollectionsController } from './api/controllers/CollectionsController';
+import { DataSourcesController } from './api/controllers/DataSourcesController';
 import { UserRepository } from './infrastructure/repositories/UserRepository';
 import { CollectionRepository } from './infrastructure/repositories/CollectionRepository';
 import { DataSourceRepository } from './infrastructure/repositories/DataSourceRepository';
 import { PasswordHasherService } from './infrastructure/services/PasswordHasherService';
-//import { EncryptionService } from './infrastructure/services/EncryptionService';
+import { EncryptionService } from './infrastructure/services/EncryptionService';
 import { LoginCommandHandler } from './application/commands/auth/LoginCommandHandler';
 import { GetCurrentUserQueryHandler } from './application/queries/auth/GetCurrentUserQueryHandler';
 import { GetAllUsersQueryHandler } from './application/queries/users/GetAllUsersQueryHandler';
@@ -35,6 +37,24 @@ import { GetAllCollectionsQueryHandler } from './application/queries/collections
 import { GetCollectionQueryHandler } from './application/queries/collections/GetCollectionQueryHandler';
 import { GetCollectionDetailsQueryHandler } from './application/queries/collections/GetCollectionDetailsQueryHandler';
 import { GetCollectionDataSourcesQueryHandler } from './application/queries/collections/GetCollectionDataSourcesQueryHandler';
+import { CreateDataSourceCommandHandler } from './application/commands/datasources/CreateDataSourceCommandHandler';
+import { GetAllDataSourcesQueryHandler } from './application/queries/datasources/GetAllDataSourcesQueryHandler';
+import { GetDataSourceQueryHandler } from './application/queries/datasources/GetDataSourceQueryHandler';
+import { ExtractSchemaCommandHandler } from './application/commands/datasources/ExtractSchemaCommandHandler';
+import { GetDataSourceSchemaQueryHandler } from './application/queries/datasources/GetDataSourceSchemaQueryHandler';
+import { UpdateSchemaMetadataCommandHandler } from './application/commands/datasources/UpdateSchemaMetadataCommandHandler';
+import { GetSchemaSnapshotsQueryHandler } from './application/queries/datasources/GetSchemaSnapshotsQueryHandler';
+import { SchemaSnapshotRepository } from './infrastructure/repositories/SchemaSnapshotRepository';
+import { SchemaComparisonService } from './infrastructure/services/SchemaComparisonService';
+import { SchemaRescanSchedulerService } from './infrastructure/services/SchemaRescanSchedulerService';
+import { SchemaExtractionService } from './infrastructure/services/SchemaExtractionService';
+import { RelationshipRepository } from './infrastructure/repositories/RelationshipRepository';
+import { RelationshipDiscoveryService } from './infrastructure/services/RelationshipDiscoveryService';
+import { DiscoverRelationshipsCommandHandler } from './application/commands/collections/DiscoverRelationshipsCommandHandler';
+import { GetCollectionRelationshipsQueryHandler } from './application/queries/collections/GetCollectionRelationshipsQueryHandler';
+import { CreateRelationshipCommandHandler } from './application/commands/collections/CreateRelationshipCommandHandler';
+import { UpdateRelationshipCommandHandler } from './application/commands/collections/UpdateRelationshipCommandHandler';
+import { DeleteRelationshipCommandHandler } from './application/commands/collections/DeleteRelationshipCommandHandler';
 
 // Load environment variables
 dotenv.config();
@@ -66,7 +86,7 @@ AppDataSource.initialize()
     if (!encryptionKey) {
       throw new Error('ENCRYPTION_KEY not configured. Set ENCRYPTION_KEY environment variable.');
     }
-    //const encryptionService = new EncryptionService(encryptionKey);
+    const encryptionService = new EncryptionService(encryptionKey);
 
     // Dependency Injection - Handlers
     const loginHandler = new LoginCommandHandler(userRepository, passwordHasher, logger);
@@ -97,6 +117,83 @@ AppDataSource.initialize()
       collectionRepository
     );
 
+    // Dependency Injection - Schema Services
+    const schemaSnapshotRepository = new SchemaSnapshotRepository();
+    const schemaExtractionService = new SchemaExtractionService();
+
+    // Dependency Injection - Relationship Services
+    const relationshipRepository = new RelationshipRepository();
+    const relationshipDiscoveryService = new RelationshipDiscoveryService(
+      dataSourceRepository,
+      schemaSnapshotRepository
+    );
+    const discoverRelationshipsHandler = new DiscoverRelationshipsCommandHandler(
+      collectionRepository,
+      relationshipRepository,
+      relationshipDiscoveryService
+    );
+    const getCollectionRelationshipsHandler = new GetCollectionRelationshipsQueryHandler(
+      collectionRepository,
+      relationshipRepository
+    );
+    const createRelationshipHandler = new CreateRelationshipCommandHandler(
+      collectionRepository,
+      relationshipRepository
+    );
+    const updateRelationshipHandler = new UpdateRelationshipCommandHandler(
+      collectionRepository,
+      relationshipRepository
+    );
+    const deleteRelationshipHandler = new DeleteRelationshipCommandHandler(
+      collectionRepository,
+      relationshipRepository
+    );
+
+    // Dependency Injection - DataSource Handlers
+    const createDataSourceHandler = new CreateDataSourceCommandHandler(
+      dataSourceRepository,
+      collectionRepository,
+      schemaExtractionService,
+      schemaSnapshotRepository,
+      encryptionService
+    );
+    const getAllDataSourcesHandler = new GetAllDataSourcesQueryHandler(
+      dataSourceRepository,
+      collectionRepository
+    );
+    const getDataSourceHandler = new GetDataSourceQueryHandler(
+      dataSourceRepository,
+      collectionRepository
+    );
+    const extractSchemaHandler = new ExtractSchemaCommandHandler(
+      dataSourceRepository,
+      schemaSnapshotRepository,
+      collectionRepository,
+      schemaExtractionService,
+      encryptionService
+    );
+    const getSchemaHandler = new GetDataSourceSchemaQueryHandler(
+      dataSourceRepository,
+      schemaSnapshotRepository,
+      collectionRepository
+    );
+    const updateSchemaMetadataHandler = new UpdateSchemaMetadataCommandHandler(
+      dataSourceRepository,
+      schemaSnapshotRepository,
+      collectionRepository
+    );
+    const getSnapshotsHandler = new GetSchemaSnapshotsQueryHandler(
+      dataSourceRepository,
+      schemaSnapshotRepository,
+      collectionRepository
+    );
+
+    // Dependency Injection - Services
+    const schemaComparisonService = new SchemaComparisonService();
+    const rescanSchedulerService = new SchemaRescanSchedulerService(
+      extractSchemaHandler
+    );
+
     // Dependency Injection - Controllers
     const authController = new AuthController(loginHandler, getCurrentUserHandler);
     const usersController = new UsersController(
@@ -115,13 +212,32 @@ AppDataSource.initialize()
       deleteCollectionHandler,
       associateDataSourceHandler,
       disassociateDataSourceHandler,
-      getCollectionDataSourcesHandler
+      getCollectionDataSourcesHandler,
+      discoverRelationshipsHandler,
+      getCollectionRelationshipsHandler,
+      createRelationshipHandler,
+      updateRelationshipHandler,
+      deleteRelationshipHandler
+    );
+    const dataSourcesController = new DataSourcesController(
+      createDataSourceHandler,
+      getAllDataSourcesHandler,
+      getDataSourceHandler,
+      extractSchemaHandler,
+      getSchemaHandler,
+      updateSchemaMetadataHandler,
+      getSnapshotsHandler,
+      schemaSnapshotRepository,
+      schemaComparisonService,
+      rescanSchedulerService,
+      encryptionService
     );
 
     // Routes
     app.use('/api/auth', createAuthRoutes(authController));
     app.use('/api/users', createUserRoutes(usersController));
     app.use('/api/collections', createCollectionRoutes(collectionsController));
+    app.use('/api/datasources', createDataSourceRoutes(dataSourcesController));
 
     // Health check
     app.get('/health', (_, res) => {
@@ -136,22 +252,21 @@ AppDataSource.initialize()
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
+
+    // Graceful shutdown
+    const shutdown = async () => {
+      logger.info('Shutting down gracefully...');
+      rescanSchedulerService.stopAll();
+      await AppDataSource.destroy();
+      logger.info('Database connection closed');
+      process.exit(0);
+    };
+
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
   })
   .catch((error) => {
     logger.error('Error during database initialization:', error);
     process.exit(1);
   });
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  await AppDataSource.destroy();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  logger.info('SIGINT signal received: closing HTTP server');
-  await AppDataSource.destroy();
-  process.exit(0);
-});
 

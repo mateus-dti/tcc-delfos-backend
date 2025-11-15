@@ -4,6 +4,7 @@ import { Collection } from '../../../domain/entities/Collection';
 import { ICollectionRepository } from '../../../domain/interfaces/ICollectionRepository';
 import { NotFoundException } from '../../../domain/exceptions/NotFoundException';
 import { ConflictException } from '../../../domain/exceptions/ConflictException';
+import { ForbiddenException } from '../../../domain/exceptions/ForbiddenException';
 import { DatabaseException } from '../../../domain/exceptions/DatabaseException';
 
 export class UpdateCollectionCommandHandler implements IUpdateCollectionCommandHandler {

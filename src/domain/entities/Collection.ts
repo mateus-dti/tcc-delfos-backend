@@ -11,6 +11,7 @@ import {
 import { User } from './User';
 import { CollectionAccess } from './CollectionAccess';
 import { DataSource } from './DataSource';
+import { Relationship } from './Relationship';
 
 @Entity('Collections')
 export class Collection {
@@ -44,5 +45,8 @@ export class Collection {
 
   @OneToMany(() => DataSource, (dataSource) => dataSource.collection)
   dataSources!: DataSource[];
+
+  @OneToMany(() => Relationship, (relationship) => relationship.collection)
+  relationships!: Relationship[];
 }
 
