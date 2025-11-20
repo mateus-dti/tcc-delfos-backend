@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+**Sempre que identificar uma User Story do ClickUp Esta Rule deve ser aplicada**
+
+
+- A User Story deve ser coletada usando o MCP Server do ClickUp
+- Deve executar a UserStory
+- Deve atualizar a UserStory no ClickUp ao finalizar o desenvolvimento
+- Deve atualizar a Collection do Postman com as rotas criadas/modificadas

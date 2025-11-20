@@ -11,13 +11,16 @@ export class GetAllDataSourcesQueryHandler implements IGetAllDataSourcesQueryHan
     private collectionRepository: ICollectionRepository
   ) {}
 
-  async handle(query: GetAllDataSourcesQuery): Promise<DataSourceDto[]> {
+  async handle(query: GetAllDataSourcesQuery): Promise<{
+    items: DataSourceDto[];
+    total: number;
+  }> {
     try {
       if (query.collectionId) {
         // Verificar se a coleção existe e se o usuário tem acesso
         const collection = await this.collectionRepository.getById(query.collectionId);
         if (!collection) {
-          return [];
+          return { items: [], total: 0 };
         }
 
         // Verificar se o usuário é o dono da coleção
@@ -28,7 +31,8 @@ export class GetAllDataSourcesQueryHandler implements IGetAllDataSourcesQueryHan
         }
 
         const dataSources = await this.dataSourceRepository.getByCollectionId(query.collectionId);
-        return dataSources.map((ds) => this.mapToDataSourceDto(ds));
+        const items = dataSources.map((ds) => this.mapToDataSourceDto(ds));
+        return { items, total: items.length };
       }
 
       // Se não especificou collectionId, retornar todas as fontes de dados das coleções do usuário
@@ -40,7 +44,7 @@ export class GetAllDataSourcesQueryHandler implements IGetAllDataSourcesQueryHan
         allDataSources.push(...dataSources.map((ds) => this.mapToDataSourceDto(ds)));
       }
 
-      return allDataSources;
+      return { items: allDataSources, total: allDataSources.length };
     } catch (error) {
       if (error instanceof ForbiddenException) {
         throw error;

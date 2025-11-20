@@ -1,0 +1,149 @@
+{
+	"name": "Modelos de IA (RF04.1)",
+	"item": [
+		{
+			"name": "Listar Modelos Públicos",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/models/public",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "models", "public"]
+				},
+				"description": "Lista todos os modelos públicos disponíveis no OpenRouter.\n\n**Query Parameters:**\n- `forceRefresh`: boolean - Força atualização do cache\n- `provider`: string - Filtra por provedor (ex: openai, anthropic)\n- `modality`: string - Filtra por modalidade (ex: text, image)\n- `sortByPrice`: 'asc' | 'desc' - Ordena por preço"
+			},
+			"response": []
+		},
+		{
+			"name": "Listar Modelos (Com Filtros)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/models/public?provider=openai&sortByPrice=asc",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "models", "public"],
+					"query": [
+						{
+							"key": "provider",
+							"value": "openai",
+							"description": "Filtrar por provedor"
+						},
+						{
+							"key": "sortByPrice",
+							"value": "asc",
+							"description": "Ordenar por preço (asc/desc)"
+						},
+						{
+							"key": "modality",
+							"value": "text",
+							"disabled": true,
+							"description": "Filtrar por modalidade"
+						},
+						{
+							"key": "forceRefresh",
+							"value": "true",
+							"disabled": true,
+							"description": "Forçar atualização do cache"
+						}
+					]
+				},
+				"description": "Exemplo de listagem com filtros aplicados."
+			},
+			"response": []
+		},
+		{
+			"name": "Buscar Modelo por ID",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/models/public/openai%2Fgpt-4",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "models", "public", "openai%2Fgpt-4"]
+				},
+				"description": "Busca informações detalhadas de um modelo específico.\n\n**Nota:** O ID do modelo deve ser URL-encoded (ex: `openai/gpt-4` → `openai%2Fgpt-4`)"
+			},
+			"response": []
+		},
+		{
+			"name": "Estatísticas do Cache",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/models/cache/stats",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "models", "cache", "stats"]
+				},
+				"description": "Retorna estatísticas sobre o cache de modelos:\n- Status do cache (cached: true/false)\n- Última atualização\n- Quantidade de modelos em cache\n- TTL configurado (em horas)"
+			},
+			"response": []
+		},
+		{
+			"name": "Limpar Cache",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/models/cache",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "models", "cache"]
+				},
+				"description": "Limpa o cache de modelos manualmente.\n\nÚtil quando:\n- Você quer forçar uma atualização imediata\n- Suspeita que o cache está desatualizado\n- Está testando a integração"
+			},
+			"response": []
+		},
+		{
+			"name": "Health Check OpenRouter",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/models/health",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "models", "health"]
+				},
+				"description": "Verifica se a API do OpenRouter está acessível.\n\n**Responses:**\n- 200: OpenRouter está acessível\n- 503: OpenRouter está indisponível"
+			},
+			"response": []
+		}
+	]
+}

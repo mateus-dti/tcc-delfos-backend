@@ -4,6 +4,9 @@ export class GetAllDataSourcesQuery {
 }
 
 export interface IGetAllDataSourcesQueryHandler {
-  handle(query: GetAllDataSourcesQuery): Promise<import('../../dto/responses/DataSourceDto').DataSourceDto[]>;
+  handle(query: GetAllDataSourcesQuery): Promise<{
+    items: import('../../dto/responses/DataSourceDto').DataSourceDto[];
+    total: number;
+  }>;
 }
 

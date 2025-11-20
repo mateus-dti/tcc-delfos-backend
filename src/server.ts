@@ -1,9 +1,13 @@
 import 'reflect-metadata';
+import dotenv from 'dotenv';
+
+// Load environment variables FIRST, before any other imports that might use them
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import 'express-async-errors';
-import dotenv from 'dotenv';
 import { AppDataSource } from './infrastructure/data/data-source';
 import { createLogger } from './infrastructure/config/logger';
 import { requestLoggingMiddleware } from './api/middleware/requestLoggingMiddleware';
@@ -12,6 +16,7 @@ import { createAuthRoutes } from './api/routes/authRoutes';
 import { createUserRoutes } from './api/routes/userRoutes';
 import { createCollectionRoutes } from './api/routes/collectionRoutes';
 import { createDataSourceRoutes } from './api/routes/dataSourceRoutes';
+import modelsRoutes from './api/routes/models';
 import { AuthController } from './api/controllers/AuthController';
 import { UsersController } from './api/controllers/UsersController';
 import { CollectionsController } from './api/controllers/CollectionsController';
@@ -56,9 +61,6 @@ import { CreateRelationshipCommandHandler } from './application/commands/collect
 import { UpdateRelationshipCommandHandler } from './application/commands/collections/UpdateRelationshipCommandHandler';
 import { DeleteRelationshipCommandHandler } from './application/commands/collections/DeleteRelationshipCommandHandler';
 
-// Load environment variables
-dotenv.config();
-
 const app = express();
 const logger = createLogger();
 const PORT = process.env.PORT || 5000;
@@ -67,10 +69,45 @@ const PORT = process.env.PORT || 5000;
 AppDataSource.initialize()
   .then(() => {
     logger.info('Database connection established');
+    logger.info(`Connected to: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_DATABASE}`);
 
     // Middleware
-    app.use(helmet());
-    app.use(cors());
+    // Configuração do Helmet para não bloquear requisições do frontend
+    app.use(helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      crossOriginEmbedderPolicy: false,
+    }));
+
+    // CORS configuration - permite requisições do frontend
+    // IMPORTANTE: Quando credentials: true, não pode usar origin: '*'
+    // Em desenvolvimento, permite localhost em diferentes portas
+    const allowedOrigins = process.env.FRONTEND_URL
+      ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+      : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000'];
+
+    const corsOptions = {
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        // Permite requisições sem origin (ex: Postman, mobile apps)
+        if (!origin) {
+          return callback(null, true);
+        }
+        // Em desenvolvimento, permite qualquer localhost
+        if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+          return callback(null, true);
+        }
+        // Verifica se a origin está na lista permitida
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        callback(new Error('Not allowed by CORS'));
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+      exposedHeaders: ['Content-Type', 'Authorization'],
+    };
+    app.use(cors(corsOptions));
+
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(requestLoggingMiddleware(logger));
@@ -237,7 +274,8 @@ AppDataSource.initialize()
     app.use('/api/auth', createAuthRoutes(authController));
     app.use('/api/users', createUserRoutes(usersController));
     app.use('/api/collections', createCollectionRoutes(collectionsController));
-    app.use('/api/datasources', createDataSourceRoutes(dataSourcesController));
+    app.use('/api/data-sources', createDataSourceRoutes(dataSourcesController));
+    app.use('/api/models', modelsRoutes);
 
     // Health check
     app.get('/health', (_, res) => {
@@ -248,9 +286,11 @@ AppDataSource.initialize()
     app.use(errorHandlerMiddleware(logger));
 
     // Start server
-    app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
+    const HOST = process.env.HOST || '0.0.0.0'; // Escuta em todas as interfaces de rede
+    app.listen(PORT, HOST, () => {
+      logger.info(`Server running on http://${HOST}:${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Accessible from: http://localhost:${PORT}`);
     });
 
     // Graceful shutdown
@@ -266,7 +306,29 @@ AppDataSource.initialize()
     process.on('SIGINT', shutdown);
   })
   .catch((error) => {
-    logger.error('Error during database initialization:', error);
+    logger.error('Error during database initialization:', {
+      code: error.code,
+      service: error.service,
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log detalhes da conexão (sem senha)
+    logger.error('Connection details:', {
+      host: process.env.DB_HOST || 'NOT SET',
+      port: process.env.DB_PORT || 'NOT SET',
+      username: process.env.DB_USERNAME || 'NOT SET',
+      database: process.env.DB_DATABASE || 'NOT SET',
+      password: process.env.DB_PASSWORD ? '***SET***' : 'NOT SET',
+    });
+
+    logger.error('Please check:');
+    logger.error('1. Database credentials in .env file');
+    logger.error('2. Database server is running and accessible');
+    logger.error('3. Network connectivity to database host');
+    logger.error('4. SSL configuration (if using Supabase)');
+
     process.exit(1);
   });
 

@@ -1,0 +1,163 @@
+### RF04.1 - Testar Endpoints de Modelos
+### Substitua {{token}} pelo seu JWT token de autenticação
+
+@baseUrl = http://localhost:3001
+@token = seu_token_jwt_aqui
+
+### 1. Listar todos os modelos
+GET {{baseUrl}}/api/models
+Authorization: Bearer {{token}}
+
+### 2. Listar modelos do OpenRouter
+GET {{baseUrl}}/api/models?origin=OpenRouter
+Authorization: Bearer {{token}}
+
+### 3. Listar modelos internos
+GET {{baseUrl}}/api/models?origin=Internal
+Authorization: Bearer {{token}}
+
+### 4. Buscar modelos por texto (ex: "gpt")
+GET {{baseUrl}}/api/models?search=gpt
+Authorization: Bearer {{token}}
+
+### 5. Buscar com múltiplos filtros
+GET {{baseUrl}}/api/models?origin=OpenRouter&search=claude
+Authorization: Bearer {{token}}
+
+### 6. Criar novo modelo interno
+POST {{baseUrl}}/api/models
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Modelo Interno Custom",
+  "identifier": "internal/custom-model-v1",
+  "description": "Nosso modelo de IA proprietário para análise de dados corporativos",
+  "origin": "Internal"
+}
+
+### 7. Criar modelo OpenRouter
+POST {{baseUrl}}/api/models
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "GPT-4o",
+  "identifier": "openai/gpt-4o",
+  "description": "Latest OpenAI model with multimodal capabilities",
+  "origin": "OpenRouter"
+}
+
+### 8. Atualizar descrição de um modelo
+# Substitua {model_id} pelo ID do modelo retornado
+PUT {{baseUrl}}/api/models/{model_id}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Descrição atualizada com mais detalhes sobre o modelo"
+}
+
+### 9. Desativar um modelo
+PUT {{baseUrl}}/api/models/{model_id}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+### 10. Reativar um modelo
+PUT {{baseUrl}}/api/models/{model_id}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+### 11. Deletar modelo (soft delete)
+DELETE {{baseUrl}}/api/models/{model_id}
+Authorization: Bearer {{token}}
+
+### 12. Testar erro - Criar modelo com identificador duplicado
+POST {{baseUrl}}/api/models
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "GPT-4 Duplicado",
+  "identifier": "openai/gpt-4",
+  "description": "Isso deve retornar erro 409 Conflict",
+  "origin": "OpenRouter"
+}
+
+### 13. Testar erro - Atualizar modelo inexistente
+PUT {{baseUrl}}/api/models/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Isso deve retornar erro 404 Not Found"
+}
+
+### 14. Testar erro - Deletar modelo inexistente
+DELETE {{baseUrl}}/api/models/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### 15. Testar sem autenticação (deve retornar 401)
+GET {{baseUrl}}/api/models
+
+###############################################
+# Exemplos de Respostas Esperadas
+###############################################
+
+# GET /api/models - Resposta esperada:
+# {
+#   "models": [
+#     {
+#       "id": "uuid",
+#       "name": "GPT-4",
+#       "identifier": "openai/gpt-4",
+#       "description": "...",
+#       "origin": "OpenRouter",
+#       "isActive": true,
+#       "createdAt": "2024-01-01T00:00:00.000Z",
+#       "updatedAt": "2024-01-01T00:00:00.000Z"
+#     }
+#   ],
+#   "total": 10
+# }
+
+# POST /api/models - Resposta esperada (201 Created):
+# {
+#   "id": "novo-uuid",
+#   "name": "Modelo Interno Custom",
+#   "identifier": "internal/custom-model-v1",
+#   "description": "...",
+#   "origin": "Internal",
+#   "isActive": true,
+#   "createdAt": "2024-01-01T00:00:00.000Z",
+#   "updatedAt": "2024-01-01T00:00:00.000Z"
+# }
+
+# PUT /api/models/:id - Resposta esperada (200 OK):
+# {
+#   "id": "uuid",
+#   "name": "Nome Atualizado",
+#   "identifier": "...",
+#   "description": "Descrição atualizada",
+#   "origin": "OpenRouter",
+#   "isActive": true,
+#   "createdAt": "2024-01-01T00:00:00.000Z",
+#   "updatedAt": "2024-01-01T12:00:00.000Z"
+# }
+
+# DELETE /api/models/:id - Resposta esperada (204 No Content):
+# (sem corpo de resposta)
+
+# Erros Esperados:
+# 400 Bad Request - Dados inválidos no body
+# 401 Unauthorized - Token JWT ausente ou inválido
+# 404 Not Found - Modelo não encontrado
+# 409 Conflict - Identificador já existe

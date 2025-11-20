@@ -53,3 +53,10 @@ O TypeORM está configurado com `synchronize: true` em desenvolvimento, então a
 - Foreign keys com ações apropriadas (CASCADE/RESTRICT)
 
 
+
+
+
+
+
+
+
