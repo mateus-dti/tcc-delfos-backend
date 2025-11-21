@@ -19,6 +19,7 @@ import { createDataSourceRoutes } from './api/routes/dataSourceRoutes';
 import modelsRoutes from './api/routes/models';
 import { AuthController } from './api/controllers/AuthController';
 import { UsersController } from './api/controllers/UsersController';
+import { QueryController } from './api/controllers/QueryController';
 import { CollectionsController } from './api/controllers/CollectionsController';
 import { DataSourcesController } from './api/controllers/DataSourcesController';
 import { UserRepository } from './infrastructure/repositories/UserRepository';
@@ -63,7 +64,7 @@ import { DeleteRelationshipCommandHandler } from './application/commands/collect
 
 const app = express();
 const logger = createLogger();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 // Initialize database connection
 AppDataSource.initialize()
@@ -269,6 +270,7 @@ AppDataSource.initialize()
       rescanSchedulerService,
       encryptionService
     );
+    const queryController = new QueryController();
 
     // Routes
     app.use('/api/auth', createAuthRoutes(authController));
@@ -276,6 +278,7 @@ AppDataSource.initialize()
     app.use('/api/collections', createCollectionRoutes(collectionsController));
     app.use('/api/data-sources', createDataSourceRoutes(dataSourcesController));
     app.use('/api/models', modelsRoutes);
+    app.post('/api/queries/execute', (req, res) => queryController.execute(req, res));
 
     // Health check
     app.get('/health', (_, res) => {

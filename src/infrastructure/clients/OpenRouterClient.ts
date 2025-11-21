@@ -103,11 +103,11 @@ export class OpenRouterClient {
   async getModels(): Promise<OpenRouterModel[]> {
     try {
       this.logger.info('Buscando modelos públicos do OpenRouter...');
-      
+
       const response = await this.client.get('/models');
-      
+
       this.logger.info(`${response.data.data.length} modelos encontrados no OpenRouter`);
-      
+
       return response.data.data;
     } catch (error) {
       this.logger.error('Erro ao buscar modelos do OpenRouter:', error);
@@ -121,16 +121,16 @@ export class OpenRouterClient {
   async getModel(modelId: string): Promise<OpenRouterModel | null> {
     try {
       this.logger.info(`Buscando modelo ${modelId} no OpenRouter...`);
-      
+
       const response = await this.client.get(`/models/${modelId}`);
-      
+
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 404) {
         this.logger.warn(`Modelo ${modelId} não encontrado no OpenRouter`);
         return null;
       }
-      
+
       this.logger.error(`Erro ao buscar modelo ${modelId}:`, error);
       throw error;
     }
@@ -158,7 +158,7 @@ export class OpenRouterClient {
           return new Error('OpenRouter está temporariamente indisponível. Tente novamente mais tarde.');
         default:
           return new Error(
-            data?.error?.message || 
+            data?.error?.message ||
             `Erro ao comunicar com OpenRouter: ${status}`
           );
       }
@@ -196,6 +196,38 @@ export class OpenRouterClient {
       this.logger.error('OpenRouter Client Error:', {
         message: error.message,
       });
+    }
+  }
+
+  /**
+   * Gera uma completude (resposta) usando um modelo específico
+   * @param modelId ID do modelo a ser usado
+   * @param prompt Prompt para o modelo
+   */
+  async generateCompletion(modelId: string, prompt: string): Promise<string> {
+    try {
+      this.logger.info(`Gerando completude com modelo ${modelId}...`);
+
+      const response = await this.client.post('/chat/completions', {
+        model: modelId,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      });
+
+      const content = response.data.choices[0]?.message?.content;
+
+      if (!content) {
+        throw new Error('Resposta do OpenRouter vazia ou inválida');
+      }
+
+      return content;
+    } catch (error) {
+      this.logger.error(`Erro ao gerar completude com modelo ${modelId}:`, error);
+      throw this.handleError(error);
     }
   }
 
